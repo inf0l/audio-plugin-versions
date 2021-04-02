@@ -13,3 +13,5 @@ to store the resulting text file.
 ## Requirements
 
 Requires python3, but other than that relies on standard library modules.
+
+Mac only (for the time being).
