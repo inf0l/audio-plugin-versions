@@ -4,6 +4,9 @@ Small utility that will scan /Library/Application Support/ subfolders
 for audio plugins (VST(3), AU, AAX) and create a .txt file containing
 plugin names and versions.
 
+#### Update:
+
+Now includes CFBundleIdentifier (vendor info) and searches subfolders recursively.
 
 ## Usage
 
