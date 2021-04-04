@@ -15,7 +15,7 @@ to store the resulting CSV file.
 
 Requires python3, but other than that relies on standard library modules.
 
-Python3 can be installed via Homebrew if it's not already installed.
+Python3 can be installed via [Homebrew](https://brew.sh/) if it's not already installed.
 
 Mac only (for the time being).
 
