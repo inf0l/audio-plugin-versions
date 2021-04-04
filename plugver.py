@@ -10,12 +10,19 @@ By Linus Bergman, 2021
 from pathlib import Path
 import xml.etree.ElementTree as ET
 
-AAXDIR = Path('/Library/Application Support/Avid/Audio/Plug-Ins')
-AAX_UNUSEDDIR = Path(
-    '/Library/Application Support/Avid/Audio/Plug-Ins (Unused)')
-VSTDIR = Path('/Library/Audio/Plug-Ins/VST')
-VST3DIR = Path('/Library/Audio/Plug-Ins/VST3')
-AUDIR = Path('/Library/Audio/Plug-Ins/Components')
+EXTENSIONS = [
+    [
+        'AAX',
+        Path('/Library/Application Support/Avid/Audio/Plug-Ins'), 'aaxplugin'
+    ],
+    [
+        'AAX (Unused)',
+        Path('/Library/Application Support/Avid/Audio/Plug-Ins (Unused)'),
+        'aaxplugin'
+    ], ['VST', Path('/Library/Audio/Plug-Ins/VST'), 'vst'],
+    ['VST3', Path('/Library/Audio/Plug-Ins/VST3'), 'vst3'],
+    ['AU', Path('/Library/Audio/Plug-Ins/Components'), 'component']
+]
 
 print("""
       Usage: By default, this utility will scan the default locations for AAX, VST, VST3 and AU plugins
@@ -36,43 +43,41 @@ def findVersion(format: str,
                 filename='pluginlist.txt'):
     with open(filename, 'a') as f:
         for pluginPath in list(plugDir.glob(f'**/*.{extension}')):
-            if 'Pace_Eden' in str(pluginPath):
-                continue
             plugin = str(pluginPath.stem)
             try:
                 tree = ET.parse(f'{str(pluginPath)}/Contents/Info.plist')
                 root = tree.getroot()
                 elements = [elem.text for elem in root.iter()]
                 version_tag = 'CFBundleShortVersionString'
+                long_version_tag = 'CFBundleVersion'
                 manufacturer_tag = 'CFBundleIdentifier'
                 if version_tag in elements:
                     version_index = elements.index(version_tag)
                     version = elements[version_index + 1]
-                    if version.startswith('0x'):
-                        version = version.split()[-1]
+                elif long_version_tag in elements:
+                    version_index = elements.index(long_version_tag)
+                    version = elements[version_index + 1]
+                else:
+                    version = 'not found'
+                if version.startswith('0x'):
+                    version = version.split()[-1]
                 if manufacturer_tag in elements:
                     manufacturer_index = elements.index(manufacturer_tag)
                     manufacturer = elements[manufacturer_index + 1]
                 else:
-                    manufacturer_tag = ''
+                    manufacturer = 'not found'
             except:
-                version = 'not found'
+                version = ''
             finally:
-                if plugin.startswith('.') or version == 'not found':
+                if plugin.startswith('.') or version == '':
                     continue
                 print(
                     f'{format:15} {plugin:40} {version:40} {manufacturer:>60}',
                     file=f)
 
 
-findVersion('AAX', AAXDIR, 'aaxplugin', filename) if filename else findVersion(
-    'AAX', AAXDIR, 'aaxplugin')
-findVersion('AAX (Unused)', AAX_UNUSEDDIR,
-            'aaxplugin', filename) if filename else findVersion(
-                'AAX (Unused)', AAX_UNUSEDDIR, 'aaxplugin')
-findVersion('VST', VSTDIR, 'vst', filename) if filename else findVersion(
-    'VST', VSTDIR, 'vst')
-findVersion('VST3', VST3DIR, 'vst3', filename) if filename else findVersion(
-    'VST3', VST3DIR, 'vst3')
-findVersion('AU', AUDIR, 'component', filename) if filename else findVersion(
-    'AU', AUDIR, 'component')
+for extension in EXTENSIONS:
+    if filename:
+        findVersion(*extension, filename)
+    else:
+        findVersion(*extension)
