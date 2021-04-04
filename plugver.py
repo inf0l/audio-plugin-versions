@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """
+plugver.py  v0.3
 Utility for checking audio plugin versions.
 
 Requires python3
@@ -9,6 +10,7 @@ By Linus Bergman, 2021
 
 from pathlib import Path
 import xml.etree.ElementTree as ET
+import csv
 
 EXTENSIONS = [
     [
@@ -26,58 +28,67 @@ EXTENSIONS = [
 
 print("""
       Usage: By default, this utility will scan the default locations for AAX, VST, VST3 and AU plugins
-      and save a list with plugin names and versions in 'pluginlist.txt'.
+      and save a list with plugin names and versions in 'pluginlist.csv'.
 
       If you run the utility multiple times without specifying a new filename, plugins will be appended
       to the end of the list meaning you will have duplicates. Either specify a new file name or delete 
-      any previous versions of 'pluginlist.txt'.
+      any previous versions of 'pluginlist.csv'.
 
       """)
 filename = input(
-    'Enter a filename (leave blank for default "pluginlist.txt"): ')
+    'Enter a filename (leave blank for default "pluginlist.csv"): ')
 
 
-def findVersion(format: str,
-                plugDir: Path,
-                extension,
-                filename='pluginlist.txt'):
-    with open(filename, 'a') as f:
-        for pluginPath in list(plugDir.glob(f'**/*.{extension}')):
-            plugin = str(pluginPath.stem)
-            try:
-                tree = ET.parse(f'{str(pluginPath)}/Contents/Info.plist')
-                root = tree.getroot()
-                elements = [elem.text for elem in root.iter()]
-                version_tag = 'CFBundleShortVersionString'
-                long_version_tag = 'CFBundleVersion'
-                manufacturer_tag = 'CFBundleIdentifier'
-                if version_tag in elements:
-                    version_index = elements.index(version_tag)
-                    version = elements[version_index + 1]
-                elif long_version_tag in elements:
-                    version_index = elements.index(long_version_tag)
-                    version = elements[version_index + 1]
-                else:
-                    version = 'not found'
-                if version.startswith('0x'):
-                    version = version.split()[-1]
-                if manufacturer_tag in elements:
-                    manufacturer_index = elements.index(manufacturer_tag)
-                    manufacturer = elements[manufacturer_index + 1]
-                else:
-                    manufacturer = 'not found'
-            except:
-                version = ''
-            finally:
-                if plugin.startswith('.') or version == '':
-                    continue
-                print(
-                    f'{format:15} {plugin:40} {version:40} {manufacturer:>60}',
-                    file=f)
+def findVersion(filename='pluginlist.csv'):
+    with open(filename, mode='a') as csv_file:
+        writer = csv.writer(csv_file, delimiter=',', quoting=csv.QUOTE_MINIMAL)
+        writer.writerow(['Type', 'Plugin Name', 'Version', 'Vendor'])
+
+        def typeList(format: str, plugDir: Path, extension):
+            for pluginPath in list(plugDir.glob(f'**/*.{extension}')):
+                plugin = str(pluginPath.stem)
+                try:
+                    tree = ET.parse(f'{str(pluginPath)}/Contents/Info.plist')
+                    root = tree.getroot()
+                    elements = [elem.text for elem in root.iter()]
+                    version_tag = 'CFBundleShortVersionString'
+                    long_version_tag = 'CFBundleVersion'
+                    manufacturer_tag = 'CFBundleIdentifier'
+                    if version_tag in elements:
+                        version_index = elements.index(version_tag)
+                        version = elements[version_index + 1]
+                    elif long_version_tag in elements:
+                        version_index = elements.index(long_version_tag)
+                        version = elements[version_index + 1]
+                    else:
+                        version = 'not found'
+                    if version.startswith('0x'):
+                        version = version.split()[-1]
+                    if manufacturer_tag in elements:
+                        manufacturer_index = elements.index(manufacturer_tag)
+                        manufacturer_string = elements[manufacturer_index +
+                                                       1].split('.')
+                        if manufacturer_string[0].startswith('c'):
+                            manufacturer = manufacturer_string[1]
+                        elif manufacturer_string[0] == 'uvi':
+                            manufacturer = manufacturer_string[0]
+                        else:
+                            # NI doesn't seem to include a vendor string
+                            manufacturer = 'Native Instruments'
+                    else:
+                        manufacturer = 'not found'
+                except:
+                    version = ''
+                finally:
+                    if plugin.startswith('.') or version == '':
+                        continue
+                    writer.writerow([format, plugin, version, manufacturer])
+
+        for extension in EXTENSIONS:
+            typeList(*extension)
 
 
-for extension in EXTENSIONS:
-    if filename:
-        findVersion(*extension, filename)
-    else:
-        findVersion(*extension)
+if filename:
+    findVersion(filename)
+else:
+    findVersion()
