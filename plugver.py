@@ -42,7 +42,7 @@ filename = input(
 def findVersion(filename='pluginlist.csv'):
     with open(filename, mode='a') as csv_file:
         writer = csv.writer(csv_file, delimiter=',', quoting=csv.QUOTE_MINIMAL)
-        writer.writerow(['Type', 'Plugin Name', 'Version', 'Vendor'])
+        writer.writerow(['Type', 'Plugin Name', 'Version', 'Vendor', 'Get Info String'])
 
         def typeList(format: str, plugDir: Path, extension):
             for pluginPath in list(plugDir.glob(f'**/*.{extension}')):
@@ -54,6 +54,7 @@ def findVersion(filename='pluginlist.csv'):
                     version_tag = 'CFBundleShortVersionString'
                     long_version_tag = 'CFBundleVersion'
                     manufacturer_tag = 'CFBundleIdentifier'
+                    get_info_tag = 'CFBundleGetInfoString'
                     if version_tag in elements:
                         version_index = elements.index(version_tag)
                         version = elements[version_index + 1]
@@ -62,6 +63,12 @@ def findVersion(filename='pluginlist.csv'):
                         version = elements[version_index + 1]
                     else:
                         version = 'not found'
+
+                    if get_info_tag in elements:
+                        info_string = elements[elements.index(get_info_tag) +1 ]
+                    else:
+                        info_string = 'not found'
+
                     if version.startswith('0x'):
                         version = version.split()[-1]
                     if manufacturer_tag in elements:
@@ -82,7 +89,7 @@ def findVersion(filename='pluginlist.csv'):
                 finally:
                     if plugin.startswith('.') or version == '':
                         continue
-                    writer.writerow([format, plugin, version, manufacturer])
+                    writer.writerow([format, plugin, version, manufacturer, info_string])
 
         for extension in EXTENSIONS:
             typeList(*extension)
