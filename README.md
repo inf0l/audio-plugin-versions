@@ -21,6 +21,10 @@ Mac only (for the time being).
 
 ## Versions
 
+#### 0.4
+
+Includes CFBundleGetInfoString (contributed by iluvcapra). As NI plugins can be identified through this string, the vendor name for NI is now only populated if 'Native Instruments' is present in the GetInfo string, thus overcoming the issue of plugins falsely being labeled as NI plugins present in 0.3.
+
 #### 0.3
 
 Now exports a .csv file instead. CFBundleIdentifier string is parsed to only show vendor id.
